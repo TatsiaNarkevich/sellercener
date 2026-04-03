@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("MEMBER")
+  area      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  tasks     Task[]
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  tasks     Task[]
+}
+
+model Status {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#6B7280")
+  order     Int      @default(0)
+  isDefault Boolean  @default(false)
+  tasks     Task[]
+}
+
+model Task {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  area         String
+  priority     String   @default("MEDIA")
+  hours        Float?
+  observations String?
+  brandId      String
+  brand        Brand    @relation(fields: [brandId], references: [id])
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  statusId     String
+  status       Status   @relation(fields: [statusId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
