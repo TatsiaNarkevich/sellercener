@@ -25,7 +25,8 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Erro ao fazer login')
+        const detail = data.detail ? ` [${data.step}: ${data.detail}]` : ''
+        setError((data.error || 'Erro ao fazer login') + detail)
         setLoading(false)
         return
       }
