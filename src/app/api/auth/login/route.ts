@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { signToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
+import fs from 'fs'
+
+function log(msg: string) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`
+  console.log(line)
+  fs.appendFileSync('/tmp/login-debug.log', line)
+}
 
 export async function POST(request: NextRequest) {
   const step: string[] = []
   try {
+    log('LOGIN REQUEST RECEIVED')
     step.push('parse-body')
     const body = await request.json()
     const { email, password } = body
@@ -14,6 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email e senha são obrigatórios' }, { status: 400 })
     }
 
+    log(`step: prisma-query for ${email}`)
     step.push('prisma-query')
     const user = await prisma.user.findUnique({ where: { email } })
 
@@ -48,8 +57,8 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Login error at step', step.at(-1), ':', error)
     const msg = error instanceof Error ? error.message : String(error)
+    log(`ERROR at step ${step.at(-1)}: ${msg}`)
     return NextResponse.json({ error: 'Erro interno do servidor', step: step.at(-1), detail: msg }, { status: 500 })
   }
 }
