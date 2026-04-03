@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
     const area = searchParams.get('area')
     const brandId = searchParams.get('brandId')
@@ -18,14 +12,6 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {}
-
-    // Members only see their area tasks by default
-    if (session.role !== 'ADMIN') {
-      if (session.area) {
-        where.area = session.area
-      }
-    }
-
     if (area) where.area = area
     if (brandId) where.brandId = brandId
     if (statusId) where.statusId = statusId
@@ -56,20 +42,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await request.json()
     const { title, description, area, priority, hours, observations, brandId, userId, statusId } = body
 
-    if (!title || !area || !brandId || !statusId) {
+    if (!title || !area || !brandId || !statusId || !userId) {
       return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
     }
-
-    // Non-admin can only assign tasks to themselves
-    const assignedUserId = session.role === 'ADMIN' ? (userId || session.userId) : session.userId
 
     const task = await prisma.task.create({
       data: {
@@ -80,7 +58,7 @@ export async function POST(request: NextRequest) {
         hours: hours ? parseFloat(hours) : null,
         observations: observations || null,
         brandId,
-        userId: assignedUserId,
+        userId,
         statusId,
       },
       include: {

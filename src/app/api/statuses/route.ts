@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 
 export async function GET() {
   try {
-    const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const statuses = await prisma.status.findMany({
-      orderBy: { order: 'asc' },
-    })
-
+    const statuses = await prisma.status.findMany({ orderBy: { order: 'asc' } })
     return NextResponse.json({ statuses })
   } catch (error) {
     console.error('Statuses GET error:', error)
@@ -22,8 +13,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
-    if (!session || session.role !== 'ADMIN') {
+    const role = request.headers.get('x-user-role')
+    if (role !== 'ADMIN') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
@@ -35,12 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     const status = await prisma.status.create({
-      data: {
-        name,
-        color: color || '#6B7280',
-        order: order ?? 0,
-        isDefault: isDefault ?? false,
-      },
+      data: { name, color: color || '#6B7280', order: order ?? 0, isDefault: isDefault ?? false },
     })
 
     return NextResponse.json({ status }, { status: 201 })

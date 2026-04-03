@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useCurrentUser } from '@/lib/user-context'
 
 interface Task {
   id: string
@@ -35,14 +36,6 @@ interface User {
   area: string | null
   role: string
   active: boolean
-}
-
-interface SessionUser {
-  userId: string
-  name: string
-  email: string
-  role: string
-  area: string | null
 }
 
 const AREA_LABELS: Record<string, string> = {
@@ -80,11 +73,11 @@ const PRIORITY_COLORS: Record<string, string> = {
 }
 
 export default function DashboardPage() {
+  const { currentUser } = useCurrentUser()
   const [tasks, setTasks] = useState<Task[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [statuses, setStatuses] = useState<Status[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [session, setSession] = useState<SessionUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   const [filterArea, setFilterArea] = useState('')
@@ -92,12 +85,6 @@ export default function DashboardPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterUser, setFilterUser] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.json())
-      .then(data => setSession(data.user))
-  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -148,7 +135,7 @@ export default function DashboardPage() {
   }).length
   const bloqueadas = tasks.filter(t => t.status.name === 'Bloqueado').length
 
-  const isAdmin = session?.role === 'ADMIN'
+  const isAdmin = currentUser?.role === 'ADMIN'
 
   return (
     <div>
@@ -307,7 +294,7 @@ export default function DashboardPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </Link>
-                        {(isAdmin || task.user.id === session?.userId) && (
+                        {(isAdmin || task.user.id === currentUser?.id) && (
                           <button
                             onClick={() => handleDelete(task.id)}
                             className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"

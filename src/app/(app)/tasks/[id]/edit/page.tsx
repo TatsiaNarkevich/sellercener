@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useCurrentUser } from '@/lib/user-context'
 
 interface Brand {
   id: string
@@ -25,14 +26,6 @@ interface User {
   role: string
 }
 
-interface SessionUser {
-  userId: string
-  name: string
-  email: string
-  role: string
-  area: string | null
-}
-
 const AREAS = [
   { value: 'CRO', label: 'CRO' },
   { value: 'WEB_ANALYTICS', label: 'Web Analytics' },
@@ -54,8 +47,8 @@ export default function EditTaskPage() {
   const router = useRouter()
   const params = useParams()
   const taskId = params.id as string
+  const { currentUser } = useCurrentUser()
 
-  const [session, setSession] = useState<SessionUser | null>(null)
   const [brands, setBrands] = useState<Brand[]>([])
   const [statuses, setStatuses] = useState<Status[]>([])
   const [users, setUsers] = useState<User[]>([])
@@ -75,13 +68,11 @@ export default function EditTaskPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/auth/me').then(r => r.json()),
       fetch(`/api/tasks/${taskId}`).then(r => r.json()),
       fetch('/api/brands').then(r => r.json()),
       fetch('/api/statuses').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
-    ]).then(([me, taskData, b, s, u]) => {
-      setSession(me.user)
+    ]).then(([taskData, b, s, u]) => {
       setBrands(b.brands || [])
       setStatuses(s.statuses || [])
       setUsers(u.users || [])
@@ -139,7 +130,7 @@ export default function EditTaskPage() {
     }
   }
 
-  const isAdmin = session?.role === 'ADMIN'
+  const isAdmin = currentUser?.role === 'ADMIN'
 
   if (initialLoading) {
     return (

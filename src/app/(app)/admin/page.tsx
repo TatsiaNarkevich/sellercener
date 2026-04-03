@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useCurrentUser } from '@/lib/user-context'
 
 interface Brand {
   id: string
@@ -54,16 +55,14 @@ const PRESET_COLORS = [
 
 export default function AdminPage() {
   const router = useRouter()
+  const { currentUser } = useCurrentUser()
   const [activeTab, setActiveTab] = useState<'brands' | 'statuses' | 'members'>('brands')
 
-  // Auth check
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(data => {
-      if (!data.user || data.user.role !== 'ADMIN') {
-        router.push('/')
-      }
-    })
-  }, [router])
+    if (currentUser && currentUser.role !== 'ADMIN') {
+      router.push('/')
+    }
+  }, [currentUser, router])
 
   // --- Brands ---
   const [brands, setBrands] = useState<Brand[]>([])
@@ -90,7 +89,7 @@ export default function AdminPage() {
     setAddingBrand(true)
     const res = await fetch('/api/brands', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ name: newBrandName }),
     })
     const data = await res.json()
@@ -103,7 +102,7 @@ export default function AdminPage() {
   async function handleToggleBrand(id: string, active: boolean) {
     await fetch(`/api/brands/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ active: !active }),
     })
     fetchBrands()
@@ -112,7 +111,7 @@ export default function AdminPage() {
   async function handleSaveBrandName(id: string) {
     await fetch(`/api/brands/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ name: editingBrandName }),
     })
     setEditingBrandId(null)
@@ -147,7 +146,7 @@ export default function AdminPage() {
     const maxOrder = statuses.reduce((max, s) => Math.max(max, s.order), -1)
     const res = await fetch('/api/statuses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ name: newStatusName, color: newStatusColor, order: maxOrder + 1 }),
     })
     const data = await res.json()
@@ -161,7 +160,7 @@ export default function AdminPage() {
   async function handleSaveStatus(id: string) {
     await fetch(`/api/statuses/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ name: editingStatusName, color: editingStatusColor }),
     })
     setEditingStatusId(null)
@@ -180,12 +179,12 @@ export default function AdminPage() {
     await Promise.all([
       fetch(`/api/statuses/${current.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
         body: JSON.stringify({ order: swap.order }),
       }),
       fetch(`/api/statuses/${swap.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
         body: JSON.stringify({ order: current.order }),
       }),
     ])
@@ -220,7 +219,7 @@ export default function AdminPage() {
     setAddingMember(true)
     const res = await fetch('/api/users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({
         name: newMemberName,
         email: newMemberEmail,
@@ -244,7 +243,7 @@ export default function AdminPage() {
   async function handleToggleUser(id: string, active: boolean) {
     await fetch(`/api/users/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ active: !active }),
     })
     fetchUsers()
@@ -254,7 +253,7 @@ export default function AdminPage() {
     const newRole = role === 'ADMIN' ? 'MEMBER' : 'ADMIN'
     await fetch(`/api/users/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': 'ADMIN' },
       body: JSON.stringify({ role: newRole }),
     })
     fetchUsers()

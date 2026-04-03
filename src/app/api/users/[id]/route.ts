@@ -1,41 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getSession()
-    if (!session || session.role !== 'ADMIN') {
+    const role = request.headers.get('x-user-role')
+    if (role !== 'ADMIN') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
     const body = await request.json()
-    const { name, email, password, role, area, active } = body
+    const { name, email, password, role: userRole, area, active } = body
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
     if (email !== undefined) updateData.email = email
-    if (role !== undefined) updateData.role = role
+    if (userRole !== undefined) updateData.role = userRole
     if (area !== undefined) updateData.area = area
     if (active !== undefined) updateData.active = active
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10)
-    }
+    if (password) updateData.password = await bcrypt.hash(password, 10)
 
     const user = await prisma.user.update({
       where: { id: params.id },
       data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        area: true,
-        active: true,
-        createdAt: true,
-      },
+      select: { id: true, name: true, email: true, role: true, area: true, active: true, createdAt: true },
     })
 
     return NextResponse.json({ user })
@@ -50,8 +39,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getSession()
-    if (!session || session.role !== 'ADMIN') {
+    const role = request.headers.get('x-user-role')
+    if (role !== 'ADMIN') {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 

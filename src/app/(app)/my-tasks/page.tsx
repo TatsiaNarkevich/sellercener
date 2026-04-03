@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useCurrentUser } from '@/lib/user-context'
 
 interface Task {
   id: string
@@ -13,14 +14,6 @@ interface Task {
   user: { id: string; name: string; area: string | null }
   status: { id: string; name: string; color: string }
   createdAt: string
-}
-
-interface SessionUser {
-  userId: string
-  name: string
-  email: string
-  role: string
-  area: string | null
 }
 
 const AREA_LABELS: Record<string, string> = {
@@ -58,31 +51,25 @@ const PRIORITY_COLORS: Record<string, string> = {
 }
 
 export default function MyTasksPage() {
+  const { currentUser } = useCurrentUser()
   const [tasks, setTasks] = useState<Task[]>([])
-  const [session, setSession] = useState<SessionUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.json())
-      .then(data => setSession(data.user))
-  }, [])
-
   const fetchTasks = useCallback(() => {
-    if (!session) return
+    if (!currentUser) { setLoading(false); return }
     setLoading(true)
-    const params = new URLSearchParams({ userId: session.userId })
+    const params = new URLSearchParams({ userId: currentUser.id })
     fetch(`/api/tasks?${params}`)
       .then(r => r.json())
       .then(data => {
         setTasks(data.tasks || [])
         setLoading(false)
       })
-  }, [session])
+  }, [currentUser])
 
   useEffect(() => {
-    if (session) fetchTasks()
-  }, [session, fetchTasks])
+    fetchTasks()
+  }, [fetchTasks])
 
   async function handleDelete(id: string) {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return
